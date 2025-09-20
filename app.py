@@ -54,10 +54,13 @@ def scrape_facebook_events():
         chrome_options.add_argument("--disable-logging")
         chrome_options.add_argument("--log-level=3")
         chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--memory-pressure-off")
+        chrome_options.add_argument("--max_old_space_size=4096")
         chrome_options.binary_location = "/usr/bin/google-chrome"
         
-        # Use default ChromeDriver
+        # Use Chrome with timeout protection
         driver = webdriver.Chrome(options=chrome_options)
+        driver.set_page_load_timeout(30)  # 30 second timeout
         
         driver.get("https://www.facebook.com/bearduk/events")
         time.sleep(10)
@@ -272,31 +275,74 @@ def load_events_from_db():
     return events
 
 def get_events():
-    init_db()
-    
-    # Check if we need to scrape (every 6 hours)
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-6 hours')")
-    recent_count = c.fetchone()[0]
-    conn.close()
-    
-    if recent_count == 0:
-        scraped_events = scrape_facebook_events()
-        if scraped_events:
-            save_events_to_db(scraped_events)
-        else:
-            manual_events = manual_update_events()
-            save_events_to_db(manual_events)
-    return load_events_from_db()
+    try:
+        init_db()
+        
+        # Check if we need to scrape (every 6 hours)
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-6 hours')")
+        recent_count = c.fetchone()[0]
+        conn.close()
+        
+        if recent_count == 0:
+            try:
+                scraped_events = scrape_facebook_events()
+                if scraped_events:
+                    save_events_to_db(scraped_events)
+                else:
+                    manual_events = manual_update_events()
+                    save_events_to_db(manual_events)
+            except Exception as scrape_error:
+                # If scraping fails, ensure we have some manual events
+                manual_events = manual_update_events()
+                save_events_to_db(manual_events)
+        
+        return load_events_from_db()
+    except Exception as e:
+        # If everything fails, return manual events directly
+        return [
+            {
+                'title': 'BEARD @ The Vaults', 
+                'date': 'Fri, 28 Nov at 21:00', 
+                'location': 'The Vaults, Southsea',
+                'facebook_url': 'https://www.facebook.com/bearduk/events',
+                'is_upcoming': True
+            },
+            {
+                'title': 'BEARD @ Steamtown', 
+                'date': 'Fri, 19 Dec at 20:00', 
+                'location': 'Steam Town Brew Co, Eastleigh',
+                'facebook_url': 'https://www.facebook.com/bearduk/events',
+                'is_upcoming': True
+            }
+        ]
 
 @app.route('/')
 def home():
-    events = get_events()
-    # All events are now already filtered to be upcoming and sorted by date
-    upcoming_events = events[:6]  # Show first 6 upcoming events
-    
-    return render_template('index.html', upcoming_events=upcoming_events, past_events=[])
+    try:
+        events = get_events()
+        # All events are now already filtered to be upcoming and sorted by date
+        upcoming_events = events[:6]  # Show first 6 upcoming events
+        
+        return render_template('index.html', upcoming_events=upcoming_events, past_events=[])
+    except Exception as e:
+        # If event loading fails, show site with manual events
+        manual_events = [
+            {
+                'title': 'BEARD @ The Vaults', 
+                'date': 'Fri, 28 Nov at 21:00', 
+                'location': 'The Vaults, Southsea',
+                'facebook_url': 'https://www.facebook.com/bearduk/events'
+            },
+            {
+                'title': 'BEARD @ Steamtown', 
+                'date': 'Fri, 19 Dec at 20:00', 
+                'location': 'Steam Town Brew Co, Eastleigh',
+                'facebook_url': 'https://www.facebook.com/bearduk/events'
+            }
+        ]
+        return render_template('index.html', upcoming_events=manual_events, past_events=[])
 
 @app.route('/update_events')
 def update_events():
@@ -490,6 +536,15 @@ def debug_status():
             'error': str(e),
             'status': 'error'
         }
+
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint"""
+    return {
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'message': 'BEARD website is running'
+    }
 
 if __name__ == '__main__':
     # Production-ready configuration
