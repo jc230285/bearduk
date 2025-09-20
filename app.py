@@ -73,9 +73,12 @@ def scrape_facebook_events():
         while i < len(lines):
             line = lines[i]
             
-            # Look for date patterns like "Fri, 28 Nov at 21:00 GMT"
-            date_pattern = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+at\s+(\d{1,2}:\d{2})\s+(GMT|BST)'
-            date_match = re.match(date_pattern, line)
+            # Look for date patterns - Updated to match Facebook's actual format
+            # Matches: "Fri, Nov 28 at 9:00 PM GMT" and "Fri, 28 Nov at 21:00 GMT"
+            date_pattern1 = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+at\s+(\d{1,2}:\d{2})\s+(AM|PM)\s+(GMT|BST)'
+            date_pattern2 = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+at\s+(\d{1,2}:\d{2})\s+(GMT|BST)'
+            
+            date_match = re.match(date_pattern1, line) or re.match(date_pattern2, line)
             
             if date_match and i + 2 < len(lines):
                 event_date = line
@@ -420,9 +423,11 @@ def test_scraping():
             while i < len(lines):
                 line = lines[i]
                 
-                # Look for date patterns
-                date_pattern = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+at\s+(\d{1,2}:\d{2})\s+(GMT|BST)'
-                date_match = re.match(date_pattern, line)
+                # Look for date patterns - Updated to match Facebook's actual format
+                date_pattern1 = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+at\s+(\d{1,2}:\d{2})\s+(AM|PM)\s+(GMT|BST)'
+                date_pattern2 = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+at\s+(\d{1,2}:\d{2})\s+(GMT|BST)'
+                
+                date_match = re.match(date_pattern1, line) or re.match(date_pattern2, line)
                 
                 if date_match and i + 2 < len(lines):
                     event_date = line
