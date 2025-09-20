@@ -1,0 +1,489 @@
+/* Early 80s Synthwave/Purple & Red Theme for BEARD Band */
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1a0033 0%, #330066 50%, #660033 100%);
+    min-height: 100vh;
+    scroll-behavior: smooth;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Header and Navigation - 80s Synthwave Style */
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: linear-gradient(90deg, #660066 0%, #cc0066 50%, #ff0066 100%);
+    z-index: 1000;
+    padding: 15px 0;
+    border-bottom: 3px solid #ff00ff;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5rem;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+    margin-left: 30px;
+    margin: 0;
+    padding: 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+nav ul {
+    list-style: none;
+    text-align: center;
+    margin-right: 30px;
+}
+
+nav ul li {
+    display: inline;
+    margin: 0 25px;
+}
+
+nav ul li a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+    border: 2px solid transparent;
+    padding: 8px 16px;
+    border-radius: 5px;
+}
+
+nav ul li a:hover {
+    color: #ff00ff;
+    background: rgba(255, 0, 255, 0.2);
+    border: 2px solid #ff00ff;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Hero Section - 80s Synthwave Style */
+.hero {
+    margin-top: 60px;
+    height: 100vh;
+    background: linear-gradient(135deg, rgba(102, 0, 102, 0.5) 0%, rgba(204, 0, 102, 0.5) 50%, rgba(255, 0, 102, 0.5) 100%),
+                url('hero-background.jpg') no-repeat center center;
+    background-size: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg,
+        rgba(255, 0, 255, 0.3) 0%,
+        rgba(255, 0, 102, 0.2) 25%,
+        rgba(102, 0, 255, 0.3) 50%,
+        rgba(255, 0, 102, 0.2) 75%,
+        rgba(255, 0, 255, 0.3) 100%);
+    animation: synthwave 8s ease-in-out infinite;
+    z-index: 1;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 0, 255, 0.1) 2px,
+        rgba(255, 0, 255, 0.1) 4px
+    );
+    z-index: 1;
+}
+
+@keyframes synthwave {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    padding: 20px;
+    border: 3px solid rgba(255, 0, 255, 0.8);
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+}
+
+.hero h1 {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255, 0, 255, 0.8),
+                 0 0 40px rgba(255, 0, 102, 0.6),
+                 0 0 60px rgba(102, 0, 255, 0.8);
+    font-family: 'Press Start 2P', cursive;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    color: #ffffff;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 20px rgba(255, 0, 255, 0.8); }
+    to { text-shadow: 0 0 30px rgba(255, 0, 255, 1), 0 0 40px rgba(255, 0, 102, 0.8); }
+}
+
+.hero p {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.6);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #ffcccc;
+}
+
+/* Sections */
+section {
+    padding: 100px 20px;
+    min-height: 50vh;
+    background: linear-gradient(135deg, rgba(26, 0, 51, 0.95) 0%, rgba(51, 0, 102, 0.95) 100%);
+    border-top: 2px solid rgba(255, 0, 255, 0.3);
+    position: relative;
+}
+
+section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 0, 255, 0.05) 2px,
+        rgba(255, 0, 255, 0.05) 4px
+    );
+    pointer-events: none;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+
+section h2 {
+    font-size: 3rem;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #ff00ff;
+    text-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
+    font-family: 'Impact', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    border-bottom: 3px solid rgba(255, 0, 102, 0.6);
+    padding-bottom: 15px;
+    display: inline-block;
+    margin-left: 50%;
+    transform: translateX(-50%);
+}
+
+section p {
+    font-size: 1.2rem;
+    margin-bottom: 25px;
+    color: #ffcccc;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.4);
+    line-height: 1.8;
+}
+
+/* Music Section */
+#music iframe {
+    width: 100%;
+    height: 350px;
+    border: 3px solid rgba(255, 0, 255, 0.6);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+}
+
+/* Gigs Section */
+#gigs ul {
+    list-style: none;
+    padding: 0;
+}
+
+#gigs li {
+    background: linear-gradient(135deg, rgba(102, 0, 102, 0.8) 0%, rgba(153, 0, 102, 0.8) 100%);
+    margin: 15px 0;
+    padding: 20px;
+    border-left: 5px solid #ff00ff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+#gigs li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+#gigs li:hover {
+    transform: translateX(10px);
+    box-shadow: 0 0 25px rgba(255, 0, 255, 0.6);
+}
+
+#gigs li:hover::before {
+    left: 100%;
+}
+
+#gigs strong {
+    color: #ff00ff;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+    font-size: 1.1rem;
+}
+
+/* Event Links */
+.event-link {
+    color: #ffccff;
+    text-decoration: none;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.4);
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(255, 0, 255, 0.3);
+}
+
+.event-link:hover {
+    color: #ff00ff;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+    border-bottom: 1px solid #ff00ff;
+    transform: scale(1.02);
+}
+
+/* Gallery Section */
+#gallery a {
+    color: #ff00ff;
+    text-decoration: none;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.6);
+    border: 2px solid rgba(255, 0, 255, 0.4);
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+#gallery a:hover {
+    background: rgba(255, 0, 255, 0.2);
+    border-color: #ff00ff;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+    transform: scale(1.05);
+}
+
+/* Contact Section */
+#contact form {
+    max-width: 600px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(102, 0, 102, 0.9) 0%, rgba(153, 0, 102, 0.9) 100%);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 0, 255, 0.6);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+}
+
+#contact label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #ffcccc;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#contact input,
+#contact textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 2px solid rgba(255, 0, 255, 0.4);
+    border-radius: 5px;
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+#contact input:focus,
+#contact textarea:focus {
+    outline: none;
+    border-color: #ff00ff;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.6);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#contact button {
+    background: linear-gradient(135deg, #ff00ff 0%, #ff0066 100%);
+    color: #ffffff;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+#contact button:hover {
+    background: linear-gradient(135deg, #ff0066 0%, #ff00ff 100%);
+    box-shadow: 0 0 25px rgba(255, 0, 255, 0.8);
+    transform: translateY(-2px);
+}
+
+/* Footer */
+footer {
+    background: linear-gradient(135deg, #000033 0%, #330033 100%);
+    color: #ffcccc;
+    text-align: center;
+    padding: 30px 0;
+    border-top: 3px solid #ff00ff;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2.5rem;
+        letter-spacing: 2px;
+    }
+    .hero p {
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+    }
+    nav {
+        display: none;
+    }
+    nav ul li {
+        display: block;
+        margin: 10px 0;
+    }
+    section {
+        padding: 80px 15px;
+    }
+    section h2 {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+    #contact form {
+        padding: 20px;
+    }
+}
+
+/* Retro CRT Elements */
+.retro-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 255, 255, 0.03) 2px,
+        rgba(255, 255, 255, 0.03) 4px
+    );
+    animation: scan 0.1s linear infinite;
+}
+
+.crt-flicker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.02);
+    animation: flicker 4s infinite;
+}
+
+@keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 0; }
+    2% { opacity: 0.1; }
+    4% { opacity: 0; }
+    8% { opacity: 0.05; }
+    10% { opacity: 0; }
+    12% { opacity: 0.02; }
+    14% { opacity: 0; }
+    18% { opacity: 0.08; }
+    20% { opacity: 0; }
+}
+
+/* Mobile Responsive - Hide header navigation on mobile */
+@media (max-width: 768px) {
+    header {
+        display: none;
+    }
+    
+    .hero {
+        margin-top: 0;
+    }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEARDUK - South Coast Pub-Rock Band</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='BEARD_white_favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='BEARD_white_192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='BEARD_white_512x512.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#ff0080">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#gigs">Gigs</a></li>
+                <li><a href="#gallery">Gallery</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <img src="{{ url_for('static', filename='BEARD_logo_RGB_full - Copy.png') }}" alt="BEARD (UK) 90s Logo" class="beard-logo-90s" style="max-width: 400px; display: block; margin: 0 auto;">
+            <p>South Coast Pub-Rock with Beard-Level Energy</p>
+            <div class="retro-elements">
+                <div class="scanlines"></div>
+                <div class="crt-flicker"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="container">
+            <h2>About BEARDUK</h2>
+            <p><strong>Categories:</strong> Band</p>
+            <p><strong>Service Area:</strong> Hampshire</p>
+            <p>BEARD is a high-energy live band bringing beard-level vibes to pubs, breweries, and venues across the South of England. Known for their infectious stage presence and tongue-in-cheek "beardy" branding, the group have carved out a loyal following through regular gigs at local favourites like The Old George in Fair Oak, The Anglers in Bishopstoke, and Steamtown Brewery in Eastleigh.</p>
+            <p>Blending rock, indie, and pub-friendly anthems with their own spin, BEARD are as much about fun as they are about music. Their shows are packed with sing-along covers, original material, and the kind of atmosphere that makes everyone feel like part of the band. Whether it's a packed brewery taproom or a village pub, they specialise in turning an ordinary night into a beard-powered party.</p>
+            <p>Beyond the stage, BEARD keep their fans hooked through social media reels, gig teasers, and music snippets on SoundCloud. They're grassroots, self-driven, and authentic — the sort of band you stumble across once, then go out of your way to see again.</p>
+        </div>
+    </section>
+
+
+    <section id="gigs">
+        <div class="container">
+            <h2>Upcoming Gigs</h2>
+            <ul>
+                {% for event in upcoming_events %}
+                <li>
+                    <strong>{{ event.date }}</strong> - 
+                    <a href="{{ event.facebook_url }}" target="_blank" class="event-link">{{ event.title }}</a>
+                    {% if event.location %}, {{ event.location }}{% endif %}
+                </li>
+                {% endfor %}
+                {% if not upcoming_events %}
+                <li>No upcoming gigs scheduled. Check back soon or follow us on social media for updates!</li>
+                {% endif %}
+            </ul>
+        </div>
+    </section>
+
+    <section id="gallery">
+        <div class="container">
+            <h2>Gallery / Media</h2>
+            <p>Check out our latest photos and videos on social media:</p>
+            <p><a href="https://instagram.com/beardbanduk" target="_blank">Instagram: @beardbanduk</a></p>
+            <p><a href="https://facebook.com/bearduk" target="_blank">Facebook: bearduk</a></p>
+            <p><strong>Contact Info:</strong> <a href="mailto:beardbanduk@gmail.com">beardbanduk@gmail.com</a></p>
+            <!-- Placeholder for embeds if needed -->
+        </div>
+    </section>
+
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BEARD (UK). All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
