@@ -41,11 +41,8 @@ def scrape_facebook_events():
         from selenium.webdriver.chrome.options import Options
         from selenium.webdriver.chrome.service import Service
         from selenium.webdriver.common.by import By
-        from webdriver_manager.chrome import ChromeDriverManager
         import time
         import re
-        
-        print("🚗 Setting up Chrome with automatic driver management...")
         
         chrome_options = Options()
         chrome_options.add_argument("--headless")
@@ -56,19 +53,17 @@ def scrape_facebook_events():
         chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         chrome_options.add_argument("--disable-logging")
         chrome_options.add_argument("--log-level=3")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.binary_location = "/usr/bin/google-chrome"
         
-        # Use webdriver-manager to automatically download and manage ChromeDriver
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        # Use default ChromeDriver
+        driver = webdriver.Chrome(options=chrome_options)
         
-        print("🌐 Loading Facebook events page...")
         driver.get("https://www.facebook.com/bearduk/events")
-        time.sleep(10)  # Wait longer for page to fully load
+        time.sleep(10)
         
         page_text = driver.find_element(By.TAG_NAME, "body").text
         lines = [line.strip() for line in page_text.split('\n') if line.strip()]
-        
-        print(f"📄 Found {len(lines)} lines of text")
         
         events = []
         i = 0
@@ -96,7 +91,6 @@ def scrape_facebook_events():
                         'is_upcoming': True,
                         'facebook_url': facebook_url
                     })
-                    print(f"✅ Found event: {event_title} on {event_date}")
                     
                 i += 3
             else:
@@ -113,14 +107,11 @@ def scrape_facebook_events():
                 seen.add(event_key)
                 unique_events.append(event)
         
-        print(f"🎉 Selenium found {len(unique_events)} unique events!")
         return unique_events
         
     except ImportError:
-        print("❌ Selenium not available, falling back to manual data")
         return []
     except Exception as e:
-        print(f"❌ Selenium error: {e}, falling back to manual data")
         if 'driver' in locals():
             try:
                 driver.quit()
@@ -194,12 +185,10 @@ def save_events_to_db(events):
             # Update existing event with latest data
             c.execute('''UPDATE events SET is_upcoming = ?, scraped_at = CURRENT_TIMESTAMP WHERE id = ?''',
                       (event.get('is_upcoming', True), existing[0]))
-            print(f"📝 Updated existing event: {event['title']}")
         else:
             # Insert new event
             c.execute('''INSERT INTO events (title, date, location, facebook_url, is_upcoming) VALUES (?, ?, ?, ?, ?)''',
                       (event['title'], event['date'], event['location'], event.get('facebook_url', ''), event.get('is_upcoming', True)))
-            print(f"✅ Added new event: {event['title']}")
     
     conn.commit()
     conn.close()
@@ -249,8 +238,7 @@ def parse_event_date(date_str):
         
         # Default fallback
         return datetime.now() + timedelta(days=30)
-    except Exception as e:
-        print(f"Date parsing error for '{date_str}': {e}")
+    except Exception:
         return datetime.now() + timedelta(days=30)
 
 def load_events_from_db():
@@ -286,25 +274,20 @@ def load_events_from_db():
 def get_events():
     init_db()
     
-    # Check if we need to scrape (every 24 hours)
+    # Check if we need to scrape (every 6 hours)
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-1 day')")
+    c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-6 hours')")
     recent_count = c.fetchone()[0]
     conn.close()
     
     if recent_count == 0:
-        print("Attempting to scrape new events...")
         scraped_events = scrape_facebook_events()
-        
         if scraped_events:
-            print(f"Successfully scraped {len(scraped_events)} events")
             save_events_to_db(scraped_events)
         else:
-            print("Scraping failed, using manual data")
             manual_events = manual_update_events()
             save_events_to_db(manual_events)
-    
     return load_events_from_db()
 
 @app.route('/')
@@ -332,6 +315,181 @@ def events_json():
     """Return events as JSON for API access"""
     events = get_events()
     return {'events': events}
+
+@app.route('/test_scraping')
+def test_scraping():
+    """Test endpoint to show live Facebook scraping output with debugging info"""
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.common.by import By
+        import time
+        import re
+        from datetime import datetime
+        
+        # Initialize response data
+        response_data = {
+            'timestamp': datetime.now().isoformat(),
+            'status': 'running',
+            'chrome_setup': 'initializing',
+            'page_load': 'pending',
+            'raw_text_sample': '',
+            'found_lines': 0,
+            'detected_events': [],
+            'errors': []
+        }
+        
+        try:
+            # Setup Chrome with debugging info
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            chrome_options.add_argument("--disable-logging")
+            chrome_options.add_argument("--log-level=3")
+            chrome_options.add_argument("--remote-debugging-port=9222")
+            chrome_options.binary_location = "/usr/bin/google-chrome"
+            
+            driver = webdriver.Chrome(options=chrome_options)
+            response_data['chrome_setup'] = 'success'
+            
+            # Load Facebook page
+            driver.get("https://www.facebook.com/bearduk/events")
+            response_data['page_load'] = 'loaded'
+            
+            time.sleep(10)
+            
+            # Get page text
+            page_text = driver.find_element(By.TAG_NAME, "body").text
+            lines = [line.strip() for line in page_text.split('\n') if line.strip()]
+            response_data['found_lines'] = len(lines)
+            response_data['raw_text_sample'] = '\n'.join(lines[:50])  # First 50 lines as sample
+            
+            # Process for events
+            events = []
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                
+                # Look for date patterns
+                date_pattern = r'(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+at\s+(\d{1,2}:\d{2})\s+(GMT|BST)'
+                date_match = re.match(date_pattern, line)
+                
+                if date_match and i + 2 < len(lines):
+                    event_date = line
+                    event_title = lines[i + 1] if i + 1 < len(lines) else ""
+                    event_location = lines[i + 2] if i + 2 < len(lines) else ""
+                    
+                    # Check if this looks like a BEARD event
+                    if 'beard' in event_title.lower() or '@' in event_title:
+                        facebook_url = f"https://www.facebook.com/bearduk/events"
+                        
+                        events.append({
+                            'date': event_date,
+                            'title': event_title,
+                            'location': event_location,
+                            'is_upcoming': True,
+                            'facebook_url': facebook_url,
+                            'line_number': i
+                        })
+                        
+                    i += 3
+                else:
+                    i += 1
+            
+            driver.quit()
+            
+            response_data['detected_events'] = events
+            response_data['status'] = 'completed'
+            response_data['events_found'] = len(events)
+            
+        except Exception as selenium_error:
+            response_data['errors'].append(f"Selenium error: {str(selenium_error)}")
+            response_data['status'] = 'selenium_failed'
+            if 'driver' in locals():
+                try:
+                    driver.quit()
+                except:
+                    pass
+        
+        return response_data
+        
+    except ImportError as import_error:
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'status': 'import_error',
+            'error': f"Missing dependencies: {str(import_error)}",
+            'available_modules': ['selenium' in str(import_error)]
+        }
+    except Exception as general_error:
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'status': 'general_error',
+            'error': str(general_error)
+        }
+
+@app.route('/debug_status')
+def debug_status():
+    """Debug endpoint showing system status and database contents"""
+    try:
+        from datetime import datetime
+        import os
+        
+        # Check database
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        
+        # Get recent scraping info
+        c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-6 hours')")
+        recent_scrapes = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM events")
+        total_events = c.fetchone()[0]
+        
+        # Get all events with details
+        c.execute("SELECT title, date, location, facebook_url, is_upcoming, scraped_at FROM events ORDER BY scraped_at DESC LIMIT 10")
+        recent_events = [
+            {
+                'title': row[0],
+                'date': row[1], 
+                'location': row[2],
+                'facebook_url': row[3],
+                'is_upcoming': row[4],
+                'scraped_at': row[5]
+            } for row in c.fetchall()
+        ]
+        
+        conn.close()
+        
+        # System info
+        status_data = {
+            'timestamp': datetime.now().isoformat(),
+            'database': {
+                'total_events': total_events,
+                'recent_scrapes_6h': recent_scrapes,
+                'database_file_exists': os.path.exists(DATABASE),
+                'recent_events': recent_events
+            },
+            'system': {
+                'chrome_binary_exists': os.path.exists('/usr/bin/google-chrome'),
+                'environment': os.environ.get('FLASK_ENV', 'not_set'),
+                'port': os.environ.get('PORT', 'not_set')
+            },
+            'facebook_url': FACEBOOK_URL,
+            'scraping_interval': '6 hours'
+        }
+        
+        return status_data
+        
+    except Exception as e:
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'error': str(e),
+            'status': 'error'
+        }
 
 if __name__ == '__main__':
     # Production-ready configuration
