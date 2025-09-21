@@ -448,6 +448,124 @@ section p {
     font-style: italic;
 }
 
+/* Compact Event Layout */
+.event-item-compact {
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(102, 0, 102, 0.1) 0%, rgba(204, 0, 102, 0.1) 100%);
+    border: 1px solid rgba(255, 0, 255, 0.2);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.event-item-compact:hover {
+    background: linear-gradient(135deg, rgba(102, 0, 102, 0.2) 0%, rgba(204, 0, 102, 0.2) 100%);
+    border-color: rgba(255, 0, 255, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(255, 0, 255, 0.2);
+}
+
+.event-clickable {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+}
+
+.event-clickable:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.event-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.event-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.event-date-compact {
+    color: #ffccff;
+    font-weight: bold;
+    font-size: 0.9em;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.4);
+    white-space: nowrap;
+}
+
+.date-badge-compact {
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.date-badge-compact.today {
+    background: rgba(255, 68, 68, 0.8);
+    color: #ffffff;
+}
+
+.date-badge-compact.tomorrow {
+    background: rgba(255, 136, 0, 0.8);
+    color: #ffffff;
+}
+
+.date-badge-compact.this-week {
+    background: rgba(255, 204, 0, 0.8);
+    color: #000000;
+}
+
+.date-badge-compact.this-month {
+    background: rgba(68, 204, 255, 0.8);
+    color: #000000;
+}
+
+.date-badge-compact.upcoming {
+    background: rgba(170, 170, 170, 0.6);
+    color: #ffffff;
+}
+
+.event-title-compact {
+    color: #ffffff;
+    font-size: 1em;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.6);
+    flex: 1;
+}
+
+.event-location-compact {
+    color: #cccccc;
+    font-size: 0.85em;
+    opacity: 0.9;
+    flex: 1;
+}
+
+.going-count-right {
+    color: #ffaa44;
+    font-weight: bold;
+    font-size: 0.8em;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.going-count-right {
+    color: #ffaa44;
+    font-weight: bold;
+    font-size: 0.8em;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
 /* Date Badges */
 .date-badge {
     padding: 4px 12px;

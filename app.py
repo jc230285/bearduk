@@ -101,11 +101,18 @@ def add_date_badges(events):
             event['date_badge'] = "TOMORROW"
             event['date_class'] = "tomorrow"
         elif days_until <= 7:
-            event['date_badge'] = "THIS WEEK"
+            event['date_badge'] = f"{days_until} DAYS"
             event['date_class'] = "this-week"
         elif days_until <= 30:
-            event['date_badge'] = "THIS MONTH"
+            event['date_badge'] = f"{days_until} DAYS"
             event['date_class'] = "this-month"
+        elif days_until <= 365:
+            weeks_until = days_until // 7
+            if weeks_until == 1:
+                event['date_badge'] = "1 WEEK"
+            else:
+                event['date_badge'] = f"{weeks_until} WEEKS"
+            event['date_class'] = "upcoming"
         else:
             event['date_badge'] = "UPCOMING"
             event['date_class'] = "upcoming"

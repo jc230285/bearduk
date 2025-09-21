@@ -54,35 +54,21 @@
             <h2>Upcoming Gigs</h2>
             <ul>
                 {% for event in upcoming_events %}
-                <li class="event-item">
-                    <a href="{{ event.facebook_url }}" target="_blank" class="event-link-full">
-                        <div class="event-content">
-                            <div class="event-header">
-                                <strong class="event-date">{{ event.date }}</strong>
-                                {% if event.date_badge %}
-                                <span class="date-badge {{ event.date_class }}">{{ event.date_badge }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="event-title">{{ event.title }}</div>
+                <li class="event-item-compact">
+                    <a href="{{ event.facebook_url }}" target="_blank" class="event-clickable">
+                        <div class="event-line">
+                            <span class="event-date-compact">{{ event.date }}</span>
+                            {% if event.date_badge %}
+                            <span class="date-badge-compact {{ event.date_class }}">{{ event.date_badge }}</span>
+                            {% endif %}
+                            <strong class="event-title-compact">{{ event.title }}</strong>
+                        </div>
+                        <div class="event-details">
                             {% if event.location %}
-                            <div class="event-location">{{ event.location }}</div>
+                            <span class="event-location-compact">@ {{ event.location }}</span>
                             {% endif %}
-                            {% if event.venue_url %}
-                            <div class="venue-link">
-                                <a href="{{ event.venue_url }}" target="_blank" class="venue-link-text">View Venue</a>
-                            </div>
-                            {% endif %}
-                            {% if event.going_count or event.interested_count or event.friends_going %}
-                            <div class="guest-info">
-                                <span class="guest-count">{{ event.going_count or 0 }} going</span>
-                                <span class="guest-count">{{ event.interested_count or 0 }} interested</span>
-                                {% if event.friends_going %}
-                                <div class="friends-going">
-                                    <span class="friends-label">Friends going:</span>
-                                    <span class="friends-list">{{ event.friends_going }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
+                            {% if event.going_count %}
+                            <span class="going-count-right">{{ event.going_count }} going</span>
                             {% endif %}
                         </div>
                     </a>
