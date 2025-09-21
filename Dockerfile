@@ -29,9 +29,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create directory for database
-RUN mkdir -p /app/data
-
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production

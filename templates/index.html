@@ -28,7 +28,7 @@
 
     <section id="home" class="hero">
         <div class="hero-content">
-            <img src="{{ url_for('static', filename='BEARD_logo_RGB_full - Copy.png') }}" alt="BEARD (UK) 90s Logo" class="beard-logo-90s" style="max-width: 400px; display: block; margin: 0 auto; opacity: 0.8;">
+            <img src="{{ url_for('static', filename='BEARD_logo_RGB_full - Copy.png') }}" alt="BEARD (UK) 90s Logo" class="beard-logo-90s" style="opacity: 35%;max-width: 400px; display: block; margin: 0 auto; opacity: 0.25;">
             <p>South Coast Pub-Rock with Beard-Level Energy</p>
             <div class="retro-elements">
                 <div class="scanlines"></div>
@@ -44,7 +44,7 @@
             <p><strong>Service Area:</strong> Hampshire</p>
             <p>BEARD is a high-energy live band bringing beard-level vibes to pubs, breweries, and venues across the South of England. Known for their infectious stage presence and tongue-in-cheek "beardy" branding, the group have carved out a loyal following through regular gigs at local favourites like The Old George in Fair Oak, The Anglers in Bishopstoke, and Steamtown Brewery in Eastleigh.</p>
             <p>Blending rock, indie, and pub-friendly anthems with their own spin, BEARD are as much about fun as they are about music. Their shows are packed with sing-along covers, original material, and the kind of atmosphere that makes everyone feel like part of the band. Whether it's a packed brewery taproom or a village pub, they specialise in turning an ordinary night into a beard-powered party.</p>
-            <p>Beyond the stage, BEARD keep their fans hooked through social media reels, gig teasers, and music snippets on SoundCloud. They're grassroots, self-driven, and authentic — the sort of band you stumble across once, then go out of your way to see again.</p>
+            <p>Beyond the stage, BEARD keep their fans hooked through social media reels and gig teasers. They're grassroots, self-driven, and authentic — the sort of band you stumble across once, then go out of your way to see again.</p>
         </div>
     </section>
 
@@ -56,14 +56,9 @@
                 {% for event in upcoming_events %}
                 <li class="event-item">
                     <a href="{{ event.facebook_url }}" target="_blank" class="event-link-full">
-                        {% if event.venue_image %}
-                        <div class="venue-image-container">
-                            <img src="{{ event.venue_image }}" alt="{{ event.location }} venue" class="venue-image" onerror="this.style.display='none'">
-                        </div>
-                        {% endif %}
                         <div class="event-content">
                             <div class="event-header">
-                                <strong class="event-date">{{ event.date }}</strong>
+                                <strong class="event-date">{{ event.full_date }}</strong>
                                 {% if event.date_badge %}
                                 <span class="date-badge {{ event.badge_class }}">{{ event.date_badge }}</span>
                                 {% endif %}
@@ -79,12 +74,8 @@
                             {% endif %}
                             {% if event.going_count or event.interested_count or event.friends_going %}
                             <div class="guest-info">
-                                {% if event.going_count %}
-                                <span class="guest-count">{{ event.going_count }} going</span>
-                                {% endif %}
-                                {% if event.interested_count %}
-                                <span class="guest-count">{{ event.interested_count }} interested</span>
-                                {% endif %}
+                                <span class="guest-count">{{ event.going_count or 0 }} going</span>
+                                <span class="guest-count">{{ event.interested_count or 0 }} interested</span>
                                 {% if event.friends_going %}
                                 <div class="friends-going">
                                     <span class="friends-label">Friends going:</span>
@@ -110,12 +101,12 @@
             <p>Check out our latest photos and videos on social media:</p>
             <p><a href="https://instagram.com/beardbanduk" target="_blank">Instagram: @beardbanduk</a>
                 {% if follower_counts.instagram %}
-                <span class="follower-count">({{ follower_counts.instagram|number_format }} followers)</span>
+                <span class="follower-count">({{ follower_counts.instagram }} followers)</span>
                 {% endif %}
             </p>
             <p><a href="https://facebook.com/bearduk" target="_blank">Facebook: bearduk</a>
                 {% if follower_counts.facebook %}
-                <span class="follower-count">({{ follower_counts.facebook|number_format }} followers)</span>
+                <span class="follower-count">({{ follower_counts.facebook }} followers)</span>
                 {% endif %}
             </p>
             <p><strong>Contact Info:</strong> <a href="mailto:beardbanduk@gmail.com">beardbanduk@gmail.com</a></p>

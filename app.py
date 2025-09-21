@@ -1,46 +1,117 @@
 from flask import Flask, render_template, request
 import requests
 from bs4 import BeautifulSoup
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import json
 import os
 from datetime import datetime, timedelta
 import re
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 
-DATABASE = 'events.db'
+DATABASE_URL = os.getenv('DATABASE_URL')
 FACEBOOK_URL = 'https://www.facebook.com/bearduk/events'
 
+# Initialize background scheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+def get_db_connection():
+    """Get a database connection"""
+    return psycopg2.connect(DATABASE_URL)
+
 def init_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS events
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  title TEXT NOT NULL,
-                  date TEXT NOT NULL,
-                  location TEXT,
-                  facebook_url TEXT,
-                  is_upcoming BOOLEAN DEFAULT 1,
-                  scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    
+    # Create events table
+    c.execute('''CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        date TEXT NOT NULL,
+        location TEXT,
+        facebook_url TEXT,
+        is_upcoming BOOLEAN DEFAULT true,
+        scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        going_count INTEGER DEFAULT 0,
+        interested_count INTEGER DEFAULT 0,
+        friends_going TEXT DEFAULT ''
+    )''')
 
     # Create social media followers table
-    c.execute('''CREATE TABLE IF NOT EXISTS social_media_followers
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  platform TEXT NOT NULL,
-                  username TEXT NOT NULL,
-                  follower_count INTEGER NOT NULL,
-                  scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                  UNIQUE(platform, username, scraped_at))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS social_media_followers (
+        id SERIAL PRIMARY KEY,
+        platform TEXT NOT NULL,
+        username TEXT NOT NULL,
+        follower_count INTEGER NOT NULL,
+        scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
 
-    # Add facebook_url column if it doesn't exist (for existing databases)
-    try:
-        c.execute('ALTER TABLE events ADD COLUMN facebook_url TEXT')
-    except:
-        pass  # Column already exists
+    # Create indexes for better performance
+    c.execute('CREATE INDEX IF NOT EXISTS idx_events_upcoming ON events(is_upcoming, date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_events_scraped_at ON events(scraped_at)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_social_followers_platform ON social_media_followers(platform, username)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_social_followers_scraped_at ON social_media_followers(scraped_at)')
 
     conn.commit()
     conn.close()
+
+def setup_background_tasks():
+    """Set up background tasks for event and follower checking"""
+    # Run initial checks on startup
+    print("Running startup checks...")
+    check_events_background()
+    check_followers_background()
+
+    # Schedule event checking - run daily at 2 AM
+    scheduler.add_job(
+        func=check_events_background,
+        trigger=CronTrigger(hour=2),  # Daily at 2 AM
+        id='daily_event_check',
+        name='Daily Event Check',
+        replace_existing=True
+    )
+
+    # Schedule follower checking - run daily at 3 AM
+    scheduler.add_job(
+        func=check_followers_background,
+        trigger=CronTrigger(hour=3),  # Daily at 3 AM
+        id='daily_follower_check',
+        name='Daily Follower Check',
+        replace_existing=True
+    )
+
+    print("Background tasks scheduled")
+
+def check_events_background():
+    """Background task to check for new events"""
+    try:
+        print("Running background event check...")
+        events = scrape_facebook_events()
+        if events:
+            save_events_to_db(events)
+            print(f"Background event check completed: {len(events)} events updated")
+        else:
+            print("Background event check: No events found")
+    except Exception as e:
+        print(f"Background event check failed: {e}")
+
+def check_followers_background():
+    """Background task to update follower counts"""
+    try:
+        print("Running background follower check...")
+        from update_followers import update_all_followers
+        update_all_followers()
+        print("Background follower check completed")
+    except Exception as e:
+        print(f"Background follower check failed: {e}")
 
 def scrape_facebook_events():
     """Scrape events from Facebook using Selenium as primary method, requests as fallback"""
@@ -492,12 +563,13 @@ def add_date_badges(events):
         try:
             # Parse the event date
             if 'datetime_obj' in event:
-                event_date = event['datetime_obj'].date()
+                event_datetime = event['datetime_obj']
+                event_date = event_datetime.date()
             else:
                 # Try to parse from date string
-                event_date = parse_event_date(event['date'])
-                if event_date:
-                    event_date = event_date.date()
+                event_datetime = parse_event_date(event['date'])
+                if event_datetime:
+                    event_date = event_datetime.date()
                 else:
                     continue
             
@@ -527,11 +599,28 @@ def add_date_badges(events):
                 # Past events
                 event['date_badge'] = None
                 event['badge_class'] = None
+            
+            # Add full date format like "Friday 28 November 2025 from 21:00-23:00"
+            if event_datetime:
+                day_name = event_datetime.strftime('%A')  # Full day name
+                day = event_datetime.day
+                month_name = event_datetime.strftime('%B')  # Full month name
+                year = event_datetime.year
+                start_time = event_datetime.strftime('%H:%M')
+                
+                # Assume 2-hour duration for end time (can be adjusted)
+                end_datetime = event_datetime + timedelta(hours=2)
+                end_time = end_datetime.strftime('%H:%M')
+                
+                event['full_date'] = f'{day_name} {day} {month_name} {year} from {start_time}-{end_time}'
+            else:
+                event['full_date'] = event['date']  # Fallback to original date
                 
         except Exception as e:
             # If date parsing fails, don't add badge
             event['date_badge'] = None
             event['badge_class'] = None
+            event['full_date'] = event.get('date', 'Date TBA')
     
     return events
 
@@ -630,29 +719,95 @@ def add_manual_events():
     return manual_events
 
 def save_events_to_db(events):
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
-    
-    # Clear old events
-    c.execute("DELETE FROM events WHERE scraped_at < datetime('now', '-30 days')")
-    
+
+    # Clear old events (PostgreSQL syntax)
+    c.execute("DELETE FROM events WHERE scraped_at < NOW() - INTERVAL '30 days'")
+
     for event in events:
-        # More comprehensive duplicate check: date + time + title + location
-        c.execute('''SELECT id FROM events WHERE date = ? AND title = ? AND location = ?''', 
-                  (event['date'], event['title'], event['location']))
-        existing = c.fetchone()
-        
-        if existing:
-            # Update existing event with latest data
-            c.execute('''UPDATE events SET is_upcoming = ?, scraped_at = CURRENT_TIMESTAMP WHERE id = ?''',
-                      (event.get('is_upcoming', True), existing[0]))
-        else:
+        # Normalize the date for duplicate checking
+        normalized_date = normalize_date_for_comparison(event['date'])
+
+        # Find existing events with similar normalized dates, titles, and locations
+        c.execute('''SELECT id, date FROM events WHERE title = ? AND location = ?''',
+                  (event['title'], event['location']))
+        existing_events = c.fetchall()
+
+        found_duplicate = False
+        for existing_id, existing_date in existing_events:
+            existing_normalized = normalize_date_for_comparison(existing_date)
+            if existing_normalized == normalized_date:
+                # Update existing event with latest data (keep the better formatted date)
+                c.execute('''UPDATE events SET date = %s, is_upcoming = %s, scraped_at = CURRENT_TIMESTAMP WHERE id = %s''',
+                          (event['date'], event.get('is_upcoming', True), existing_id))
+                found_duplicate = True
+                break
+
+        if not found_duplicate:
             # Insert new event
-            c.execute('''INSERT INTO events (title, date, location, facebook_url, is_upcoming) VALUES (?, ?, ?, ?, ?)''',
+            c.execute('''INSERT INTO events (title, date, location, facebook_url, is_upcoming) VALUES (%s, %s, %s, %s, %s)''',
                       (event['title'], event['date'], event['location'], event.get('facebook_url', ''), event.get('is_upcoming', True)))
-    
+
     conn.commit()
     conn.close()
+
+def normalize_date_for_comparison(date_str):
+    """Normalize date strings for duplicate comparison by extracting day, month, year, hour, minute"""
+    try:
+        # Handle "Fri, 28 Nov at 21:00" format
+        date_match = re.search(r'(\d{1,2})\s*(\w{3})\s*at\s*(\d{1,2}):(\d{2})', date_str)
+        if date_match:
+            day = int(date_match.group(1))
+            month_str = date_match.group(2)
+            hour = int(date_match.group(3))
+            minute = int(date_match.group(4))
+
+            # Map month abbreviations
+            months = {
+                'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+                'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+            }
+
+            month = months.get(month_str, 1)
+            year = datetime.now().year
+
+            # If the date seems to be in the past, assume it's next year
+            event_date = datetime(year, month, day, hour, minute)
+            if event_date < datetime.now() - timedelta(days=90):  # More than 3 months ago
+                year += 1
+
+            return f"{year}-{month:02d}-{day:02d}-{hour:02d}-{minute:02d}"
+
+        # Handle "Friday 28 November 2025 from 21:00-23:00" format
+        date_match = re.search(r'(\d{1,2})\s+(\w+)\s+(\d{4})', date_str)
+        if date_match:
+            day = int(date_match.group(1))
+            month_str = date_match.group(2)
+            year = int(date_match.group(3))
+
+            months = {
+                'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
+            }
+
+            month = months.get(month_str, 1)
+            return f"{year}-{month:02d}-{day:02d}"
+
+        # Handle "Tomorrow at X:XX" format
+        if "Tomorrow" in date_str:
+            tomorrow = datetime.now() + timedelta(days=1)
+            time_match = re.search(r'at (\d{1,2}):(\d{2})', date_str)
+            if time_match:
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2))
+                return f"{tomorrow.year}-{tomorrow.month:02d}-{tomorrow.day:02d}-{hour:02d}-{minute:02d}"
+            return f"{tomorrow.year}-{tomorrow.month:02d}-{tomorrow.day:02d}-19-00"
+
+        return date_str  # Fallback to original string
+
+    except Exception:
+        return date_str
 
 def parse_event_date(date_str):
     """Parse Facebook date format and return a datetime object"""
@@ -666,48 +821,69 @@ def parse_event_date(date_str):
                 minute = int(time_match.group(2))
                 return tomorrow.replace(hour=hour, minute=minute, second=0, microsecond=0)
             return tomorrow.replace(hour=19, minute=0, second=0, microsecond=0)
-        
-        # Handle "Fri, 28 Nov at 21:00" format
+
+        # Handle "Fri, 28 Nov at 21:00" format (no year)
         date_match = re.search(r'(\w{3}),?\s*(\d{1,2})\s*(\w{3})\s*at\s*(\d{1,2}):(\d{2})', date_str)
         if date_match:
             day = int(date_match.group(2))
             month_str = date_match.group(3)
             hour = int(date_match.group(4))
             minute = int(date_match.group(5))
-            
+
             # Map month abbreviations
             months = {
                 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
                 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
             }
-            
+
             month = months.get(month_str, 1)
             year = datetime.now().year
-            
-            # If the date seems to be in the past, assume it's next year
+
+            # Create the event date for this year
             event_date = datetime(year, month, day, hour, minute)
-            if event_date < datetime.now():
+
+            # If the date is more than 3 months in the past, assume it's next year
+            # If it's within 3 months (past or future), keep it as this year
+            three_months_ago = datetime.now() - timedelta(days=90)
+            if event_date < three_months_ago:
                 event_date = datetime(year + 1, month, day, hour, minute)
-            
+
             return event_date
-        
+
+        # Handle "September 10, 2025" format (with year)
+        date_with_year_match = re.search(r'(\w+)\s+(\d{1,2}),?\s+(\d{4})', date_str)
+        if date_with_year_match:
+            month_str = date_with_year_match.group(1)
+            day = int(date_with_year_match.group(2))
+            year = int(date_with_year_match.group(3))
+
+            months = {
+                'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
+                'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+                'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+            }
+
+            month = months.get(month_str, 1)
+            return datetime(year, month, day, 19, 0)  # Default to 19:00 if no time
+
         # Handle other date formats
         try:
             return datetime.strptime(date_str, "%B %d, %Y")
         except:
             pass
-        
+
         # Default fallback
         return datetime.now() + timedelta(days=30)
     except Exception:
         return datetime.now() + timedelta(days=30)
 
 def load_events_from_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
     # Select the event with the highest going_count for each unique title+date+location combination
     c.execute("""
-        SELECT title, date, location, facebook_url, venue_url, venue_image, going_count, interested_count, friends_going, is_upcoming
+        SELECT title, date, location, facebook_url, going_count, interested_count, is_upcoming
         FROM events
         WHERE id IN (
             SELECT id
@@ -729,19 +905,19 @@ def load_events_from_db():
         is_future = event_date > current_time
         is_recent_past = event_date > current_time - timedelta(days=30)  # Include events from last 30 days
 
-        # Include future events and recent past events
-        if is_future or is_recent_past:
+        # Include only future events
+        if is_future:
             events.append({
                 'title': row[0],
                 'date': row[1],
                 'location': row[2],
                 'facebook_url': row[3] or 'https://www.facebook.com/bearduk/events',
-                'venue_url': row[4],
-                'venue_image': row[5],
-                'going_count': row[6] or 0,
-                'interested_count': row[7] or 0,
-                'friends_going': row[8] or '',
-                'is_upcoming': bool(row[9]),
+                'venue_url': None,  # Not in database
+                'venue_image': None,  # Not in database
+                'going_count': row[4] or 0,
+                'interested_count': row[5] or 0,
+                'friends_going': '',  # Not in database
+                'is_upcoming': bool(row[6]),
                 'datetime_obj': event_date
             })
 
@@ -752,7 +928,7 @@ def load_events_from_db():
 
 def get_follower_counts():
     """Get the latest follower counts for all social media platforms"""
-    conn = sqlite3.connect(DATABASE)
+    conn = get_db_connection()
     c = conn.cursor()
 
     # Get latest follower count for each platform/username combination
@@ -783,10 +959,11 @@ def get_events():
         init_db()
         
         # Check if we need to scrape (every 6 hours)
-        conn = sqlite3.connect(DATABASE)
+        conn = get_db_connection()
         c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-6 hours')")
-        recent_count = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > NOW() - INTERVAL '6 hours'")
+        result = c.fetchone()
+        recent_count = result[0] if result else 0
         conn.close()
         
         if recent_count == 0:
@@ -1166,18 +1343,21 @@ def debug_status():
         import os
         
         # Check database
-        conn = sqlite3.connect(DATABASE)
+        conn = get_db_connection()
         c = conn.cursor()
         
         # Get recent scraping info
-        c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > datetime('now', '-6 hours')")
-        recent_scrapes = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM events WHERE scraped_at > NOW() - INTERVAL '6 hours'")
+        result = c.fetchone()
+        recent_scrapes = result[0] if result else 0
         
         c.execute("SELECT COUNT(*) FROM events")
-        total_events = c.fetchone()[0]
+        result = c.fetchone()
+        total_events = result[0] if result else 0
         
         # Get all events with details
         c.execute("SELECT title, date, location, facebook_url, is_upcoming, scraped_at FROM events ORDER BY scraped_at DESC LIMIT 10")
+        events_rows = c.fetchall()
         recent_events = [
             {
                 'title': row[0],
@@ -1185,8 +1365,8 @@ def debug_status():
                 'location': row[2],
                 'facebook_url': row[3],
                 'is_upcoming': row[4],
-                'scraped_at': row[5]
-            } for row in c.fetchall()
+                'scraped_at': str(row[5])
+            } for row in events_rows
         ]
         
         conn.close()
@@ -1197,7 +1377,7 @@ def debug_status():
             'database': {
                 'total_events': total_events,
                 'recent_scrapes_6h': recent_scrapes,
-                'database_file_exists': os.path.exists(DATABASE),
+                'database_connected': True,
                 'recent_events': recent_events
             },
             'system': {
@@ -1226,6 +1406,9 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'message': 'BEARD website is running'
     }
+
+# Set up background tasks when the module is imported
+setup_background_tasks()
 
 if __name__ == '__main__':
     # Production-ready configuration
