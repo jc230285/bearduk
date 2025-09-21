@@ -58,9 +58,9 @@
                     <a href="{{ event.facebook_url }}" target="_blank" class="event-link-full">
                         <div class="event-content">
                             <div class="event-header">
-                                <strong class="event-date">{{ event.full_date }}</strong>
+                                <strong class="event-date">{{ event.date }}</strong>
                                 {% if event.date_badge %}
-                                <span class="date-badge {{ event.badge_class }}">{{ event.date_badge }}</span>
+                                <span class="date-badge {{ event.date_class }}">{{ event.date_badge }}</span>
                                 {% endif %}
                             </div>
                             <div class="event-title">{{ event.title }}</div>

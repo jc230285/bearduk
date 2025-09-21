@@ -18,6 +18,7 @@ def get_db_connection():
 
 def load_events_from_beard_events():
     """Load upcoming events from beard_events table"""
+    print("=== DEBUG: Loading events from beard_events ===")
     conn = get_db_connection()
     c = conn.cursor()
     
@@ -31,27 +32,39 @@ def load_events_from_beard_events():
     
     rows = c.fetchall()
     conn.close()
+    
+    print(f"DEBUG: Found {len(rows)} raw rows from database")
 
     events = []
-    for row in rows:
+    for i, row in enumerate(rows):
         event_id, url, timestamp, name, responded, location, venueurl, duration, imageurl, updated = row
+        print(f"DEBUG: Processing event {i+1}: {name} at {timestamp}")
         
         # Format the event data
-        events.append({
-            'id': event_id,
-            'title': name or 'BEARD Event',
-            'date': format_event_date(timestamp),
-            'location': location or 'TBA',
-            'facebook_url': url,
-            'venue_url': venueurl,
-            'venue_image': imageurl,
-            'going_count': responded or 0,
-            'interested_count': 0,  # Not available in beard_events
-            'friends_going': '',
-            'is_upcoming': True,
-            'datetime_obj': timestamp
-        })
+        try:
+            formatted_date = format_event_date(timestamp)
+            print(f"DEBUG: Formatted date: {formatted_date}")
+            
+            event_data = {
+                'id': event_id,
+                'title': name or 'BEARD Event',
+                'date': formatted_date,
+                'location': location or 'TBA',
+                'facebook_url': url,
+                'venue_url': venueurl,
+                'venue_image': imageurl,
+                'going_count': responded or 0,
+                'interested_count': 0,  # Not available in beard_events
+                'friends_going': '',
+                'is_upcoming': True,
+                'datetime_obj': timestamp
+            }
+            events.append(event_data)
+            print(f"DEBUG: Added event: {event_data['title']}")
+        except Exception as e:
+            print(f"DEBUG: Error processing event {name}: {e}")
 
+    print(f"DEBUG: Final events list has {len(events)} events")
     return events
 
 def format_event_date(timestamp):
@@ -62,13 +75,14 @@ def format_event_date(timestamp):
     try:
         # Format like "Friday 28 November 2025 from 21:00"
         day_name = timestamp.strftime("%A")
-        day = timestamp.strftime("%-d" if os.name != 'nt' else "%#d")  # Remove leading zero
+        day = timestamp.strftime("%d").lstrip('0')  # Safer approach for leading zeros
         month = timestamp.strftime("%B")
         year = timestamp.strftime("%Y")
         time = timestamp.strftime("%H:%M")
         
         return f"{day_name} {day} {month} {year} from {time}"
-    except:
+    except Exception as e:
+        print(f"DEBUG: Date formatting error for {timestamp}: {e}")
         return str(timestamp)
 
 def parse_event_date(date_str):
@@ -86,6 +100,7 @@ def parse_event_date(date_str):
 
 def add_date_badges(events):
     """Add formatted date information to events"""
+    print(f"DEBUG: Adding date badges to {len(events)} events")
     current_time = datetime.now()
     
     for event in events:
@@ -114,15 +129,23 @@ def add_date_badges(events):
 
 @app.route('/')
 def index():
+    print("=== DEBUG: Index route called ===")
     try:
         events = load_events_from_beard_events()
+        print(f"DEBUG: Loaded {len(events)} events from database")
+        
         events_with_badges = add_date_badges(events)
+        print(f"DEBUG: Added badges to {len(events_with_badges)} events")
+        
+        print(f"DEBUG: Rendering template with {len(events_with_badges)} events")
         
         return render_template('index.html', 
                              upcoming_events=events_with_badges,
                              total_events=len(events_with_badges))
     except Exception as e:
-        print(f"Error loading events: {e}")
+        print(f"DEBUG: Error in index route: {e}")
+        import traceback
+        traceback.print_exc()
         return render_template('index.html', 
                              upcoming_events=[], 
                              total_events=0,
