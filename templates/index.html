@@ -28,7 +28,7 @@
 
     <section id="home" class="hero">
         <div class="hero-content">
-            <img src="{{ url_for('static', filename='BEARD_logo_RGB_full - Copy.png') }}" alt="BEARD (UK) 90s Logo" class="beard-logo-90s" style="max-width: 400px; display: block; margin: 0 auto;">
+            <img src="{{ url_for('static', filename='BEARD_logo_RGB_full - Copy.png') }}" alt="BEARD (UK) 90s Logo" class="beard-logo-90s" style="max-width: 400px; display: block; margin: 0 auto; opacity: 0.8;">
             <p>South Coast Pub-Rock with Beard-Level Energy</p>
             <div class="retro-elements">
                 <div class="scanlines"></div>
@@ -54,10 +54,47 @@
             <h2>Upcoming Gigs</h2>
             <ul>
                 {% for event in upcoming_events %}
-                <li>
-                    <strong>{{ event.date }}</strong> - 
-                    <a href="{{ event.facebook_url }}" target="_blank" class="event-link">{{ event.title }}</a>
-                    {% if event.location %}, {{ event.location }}{% endif %}
+                <li class="event-item">
+                    <a href="{{ event.facebook_url }}" target="_blank" class="event-link-full">
+                        {% if event.venue_image %}
+                        <div class="venue-image-container">
+                            <img src="{{ event.venue_image }}" alt="{{ event.location }} venue" class="venue-image" onerror="this.style.display='none'">
+                        </div>
+                        {% endif %}
+                        <div class="event-content">
+                            <div class="event-header">
+                                <strong class="event-date">{{ event.date }}</strong>
+                                {% if event.date_badge %}
+                                <span class="date-badge {{ event.badge_class }}">{{ event.date_badge }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="event-title">{{ event.title }}</div>
+                            {% if event.location %}
+                            <div class="event-location">{{ event.location }}</div>
+                            {% endif %}
+                            {% if event.venue_url %}
+                            <div class="venue-link">
+                                <a href="{{ event.venue_url }}" target="_blank" class="venue-link-text">View Venue</a>
+                            </div>
+                            {% endif %}
+                            {% if event.going_count or event.interested_count or event.friends_going %}
+                            <div class="guest-info">
+                                {% if event.going_count %}
+                                <span class="guest-count">{{ event.going_count }} going</span>
+                                {% endif %}
+                                {% if event.interested_count %}
+                                <span class="guest-count">{{ event.interested_count }} interested</span>
+                                {% endif %}
+                                {% if event.friends_going %}
+                                <div class="friends-going">
+                                    <span class="friends-label">Friends going:</span>
+                                    <span class="friends-list">{{ event.friends_going }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
                 </li>
                 {% endfor %}
                 {% if not upcoming_events %}
@@ -71,8 +108,16 @@
         <div class="container">
             <h2>Gallery / Media</h2>
             <p>Check out our latest photos and videos on social media:</p>
-            <p><a href="https://instagram.com/beardbanduk" target="_blank">Instagram: @beardbanduk</a></p>
-            <p><a href="https://facebook.com/bearduk" target="_blank">Facebook: bearduk</a></p>
+            <p><a href="https://instagram.com/beardbanduk" target="_blank">Instagram: @beardbanduk</a>
+                {% if follower_counts.instagram %}
+                <span class="follower-count">({{ follower_counts.instagram|number_format }} followers)</span>
+                {% endif %}
+            </p>
+            <p><a href="https://facebook.com/bearduk" target="_blank">Facebook: bearduk</a>
+                {% if follower_counts.facebook %}
+                <span class="follower-count">({{ follower_counts.facebook|number_format }} followers)</span>
+                {% endif %}
+            </p>
             <p><strong>Contact Info:</strong> <a href="mailto:beardbanduk@gmail.com">beardbanduk@gmail.com</a></p>
             <!-- Placeholder for embeds if needed -->
         </div>
